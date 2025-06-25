@@ -21,6 +21,9 @@
     }
 
     /* Your style here... */
+    #captcha-container img {
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -76,7 +79,13 @@
 
           this.width = 25; // width of the image
           this.height = 32; // height of the image
-                    
+          
+          // create a clickable wrapper element for ball
+          this.wrapper = document.createElement('wrapper');
+          this.wrapper.style.width = '42px'; 
+          this.wrapper.style.height = '42px'; 
+          this.wrapper.append(this.image)
+          
           // place the image onto the captcha
           document.getElementById('captcha-container').appendChild(this.image);
           this.image.style.top = this.y + "px";
@@ -84,40 +93,56 @@
 
           // add listeners and flags to manage mouse controls 
           this.aiming = false;
-          this.initialMouseX = null;
-          this.initialMouseY = null;
+          this.initialX = null;
+          this.initialY = null;
           this.dX = 0;
           this.dY = 0;
           
-          // let the mouse be clicked and drag anywhere in the game
+          // lets the ball be dragged from anywhere
           document.addEventListener('mousedown', (e) => this.handleMouseDown(e));
           document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-          document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+          document.addEventListener('mouseup', (e) => this.handleRelease(e));
+
+          // adding touch constrols
+          // lets the ball be dragged from anywhere
+          document.addEventListener('touchstart', (e) => this.handleTouchStart(e), {passive:false});
+          document.addEventListener('touchmove', (e) => this.handleTouchMove(e), {passive:false});
+          document.addEventListener('touchend', (e) => this.handleRelease(e));
         }
 
         // controls to move the ball
         
-        // this needs to be fixed because the mouse stays down after initial click
         handleMouseDown(e) {
           this.aiming = true;
-          this.initialMouseX = e.clientX;
-          this.initialMouseY = e.clientY;
-          console.log("mouse pressed down")
+          this.initialX = e.clientX;
+          this.initialY = e.clientY;
         }
 
         handleMouseMove(e) {
           if (this.aiming) {
             // update the change in mouse positions
-            this.dX = e.clientX - this.initialMouseX;
-            this.dY = e.clientY - this.initialMouseY;
+            this.dX = e.clientX - this.initialX;
+            this.dY = e.clientY - this.initialY;
           }
         }
 
-        // this needs to be fixed because it only registers when clicked
-        handleMouseUp(e) {
+        handleRelease(e) {
           this.aiming = false;
           this.move(this.dX, this.dY); // move ball in the same direction as mouse 
-          console.log("mouse is released")
+        }
+
+        handleTouchStart(e) {
+          this.aiming = true;
+          this.initialX = e.touches[0].clientX;
+          this.initialY = e.touches[0].clientY;
+        }
+
+        handleTouchMove (e) {
+          if (this.aiming) {
+            // update the change in mouse positions
+            this.dX = e.touches[0].clientX - this.initialX;
+            this.dY = e.touches[0].clientY - this.initialY;
+          }
         }
 
         // move ony whenever aiming is finished
@@ -141,8 +166,8 @@
           this.vy = Math.min(this.vy, terminalVelocity); // limit based on fastest velocity of ball
           
           // keeping the ball within the borders
-          this.y = Math.min(this.y, containerHeight-this.height); 
-          this.x = Math.min(this.x, containerWidth-this.width); 
+          this.y = Math.min(this.y, containerHeight-2*this.height); 
+          this.x = Math.min(this.x, containerWidth-2*this.width); 
           this.y = Math.max(this.y, 0);
           this.x = Math.max(this.x, 0);
 
@@ -164,8 +189,7 @@
         // Your CAPTCHA code goes here, we've added a simple example below:
         // ball.wrapper.addEventListener('click', () => captchaSuccess());
       
-      
-      
+    
       }
 
       // when hitting start
