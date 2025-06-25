@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Joel</title>
+  <title>Basketballin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style type="text/css">
@@ -30,8 +30,8 @@
     Hello world!
 
     <!-- We've added a sample button. Feel free to remove it: -->
-    <button id="solve">
-      Solve!
+    <button id="start">
+      Start!
     </button>
   </div>
 
@@ -42,9 +42,136 @@
         window.top.postMessage("success", '*');
       }
 
-      // Your CAPTCHA code goes here, we've added a simple example below:
-      document.getElementById('solve')
-           .addEventListener('click', () => captchaSuccess());
+      // a better random function with ranges for whole numbers (https://www.w3schools.com/js/js_random.asp)
+      // min in inclusive, max is exclusive
+      function randomRange(min, max) {
+        return Math.floor(Math.random() * (max - min) + min);
+      }
+
+      // a function to randomly select an element in an array
+      function randomChoice(choices) {
+        return choices[randomRange(0, choices.length)];
+      }
+
+      // use the CAPTCHA dimensions as global variables
+      const containerWidth = parseInt(getComputedStyle(document.getElementById("captcha-container")).width); 
+      const containerHeight = parseInt(getComputedStyle(document.getElementById("captcha-container")).height); 
+
+      const terminalVelocity = 25; // rounded the actual terminal velocity of falling basketball (https://www.youtube.com/watch?v=EDKQIeWvXjw)
+
+// creating a class for all of the different characters
+      class ballObject {
+        constructor(src, x, y) {
+          this.image = new Image();
+          this.image.src = src;
+          
+          // position of the character
+          this.image.style.position = 'absolute';
+          this.x = x;
+          this.y = y;
+          
+          // velocity of the ball, always starts at rest
+          this.vx = 0; 
+          this.vy = 0;
+
+          this.width = 25; // width of the image
+          this.height = 32; // height of the image
+                    
+          // place the image onto the captcha
+          document.getElementById('captcha-container').appendChild(this.image);
+          this.image.style.top = this.y + "px";
+          this.image.style.left = this.x + "px";
+
+          // add listeners and flags to manage mouse controls 
+          this.aiming = false;
+          this.initialMouseX = null;
+          this.initialMouseY = null;
+          this.dX = 0;
+          this.dY = 0;
+          
+          // let the mouse be clicked and drag anywhere in the game
+          document.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+          document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+          document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        }
+
+        // controls to move the ball
+        
+        // this needs to be fixed because the mouse stays down after initial click
+        handleMouseDown(e) {
+          this.aiming = true;
+          this.initialMouseX = e.clientX;
+          this.initialMouseY = e.clientY;
+          console.log("mouse pressed down")
+        }
+
+        handleMouseMove(e) {
+          if (this.aiming) {
+            // update the change in mouse positions
+            this.dX = e.clientX - this.initialMouseX;
+            this.dY = e.clientY - this.initialMouseY;
+          }
+        }
+
+        // this needs to be fixed because it only registers when clicked
+        handleMouseUp(e) {
+          this.aiming = false;
+          this.move(this.dX, this.dY); // move ball in the same direction as mouse 
+          console.log("mouse is released")
+        }
+
+        // move ony whenever aiming is finished
+        move(dX, dY) {
+          if (!this.aiming) {
+            this.vx += dX / 10;
+            this.vy += dY / 10;
+          }
+        }
+
+        // continually update movement from gravity
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          this.vy += 0.981; // gravity (based on the real constant of 9.81 m/s^2)
+
+          // applies air resistance to slow ball over time
+          this.vx *= 0.95 
+          this.vy *= 0.95 
+
+          this.vy = Math.min(this.vy, terminalVelocity); // limit based on fastest velocity of ball
+          
+          // keeping the ball within the borders
+          this.y = Math.min(this.y, containerHeight-this.height); 
+          this.x = Math.min(this.x, containerWidth-this.width); 
+          this.y = Math.max(this.y, 0);
+          this.x = Math.max(this.x, 0);
+
+          this.image.style.top = this.y + "px";
+          this.image.style.left = this.x + "px";
+        }
+
+      }
+
+      function startGame() {
+        const ball = new ballObject("assets/circle.png", 
+                                    randomRange(0, containerWidth), 32);
+
+        // keep the ball's movement updated from gravity
+        setInterval(() => {
+          ball.update();
+        }, 36); 
+
+        // Your CAPTCHA code goes here, we've added a simple example below:
+        // ball.wrapper.addEventListener('click', () => captchaSuccess());
+      
+      
+      
+      }
+
+      // when hitting start
+      document.getElementById("start").addEventListener("click", () => {
+        startGame();
+      });
 
     })(window, document);
   </script>
