@@ -28,7 +28,7 @@
     }
 
     #captcha-container canvas {
-      pointer-events: none;
+      pointer-events: auto;
       user-select: none;
     }
 
@@ -218,8 +218,8 @@
           }
 
           // ceiling
-          else if (this.y < 0) {
-            this.y = 0;
+          else if (this.y < 15) {
+            this.y = 15;
             this.vx *= -0.97;
             this.vy *= -0.97;
           }
@@ -337,15 +337,14 @@
         background.fillStyle = backgroundTheme.floor; // deep slate
         background.fillRect(0, containerHeight - 2*32 + 5, containerWidth, containerHeight);
 
-
         // initializing the captcha objects
         const ball = new ballObject("assets/ball.png", 
                                     randomRange(0, containerWidth-2*25), 
-                                    randomRange(80, 200));
+                                    randomRange(95, 200));
 
         const hoop = new hoopObject("assets/hoop.png",
                                     randomRange(0, containerWidth-2*75), 
-                                    60, hoopSpeed);
+                                    75, hoopSpeed);
 
         // hide the start button so it doesn't get spammed
         document.getElementById("start").style.visibility = "hidden";
@@ -371,12 +370,11 @@
 
         idleDetection = setInterval(() => {
           clicksPerSecond = clickCounter / timeInterval;
-          console.log(clicksPerSecond);
           
           // both minimal clicks and low horizontal velocity is basically a dead ball
           if (clicksPerSecond <= 0.56 && Math.abs(ball.vx) <= 0.5) {
             clickCounter = 0;
-            resetGame(false, this, hoop, "DEAD BALL: KEEP THE BALL MOVING! RESET SCORE!");
+            resetGame(false, ball, hoop, "DEAD BALL: KEEP THE BALL MOVING! RESET SCORE!");
           }
           else{
             clickCounter = 0;
@@ -453,7 +451,6 @@
         if (hoops >= goal) {
           captchaSuccess();
         }
-
       }
 
       // when hitting start
