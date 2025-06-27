@@ -64,8 +64,9 @@
 
       const terminalVelocity = 25; // rounded the actual terminal velocity of falling basketball (https://www.youtube.com/watch?v=EDKQIeWvXjw)
       const goal = 10; // number of hoops needed for success
-      let hoops = 4; // number of hoops made so far
+      let hoops = 0; // number of hoops made so far
       let gravity = 0.981; // gravitational constant
+      let fails = 0; // decrease difficulty if too many fails
 
       // some fun details, different backgrounds and their names
       const backgroundThemes = [
@@ -234,7 +235,7 @@
                     gravity = Math.abs(gravity);
 
                     if (hoops == 4) {
-                      gravity *= 1.8;
+                      gravity *= 1.5;
                       resetGame(true, this, hoop, "Nice, you made a goal. " + (goal-(hoops+1)) + " goals left! Gravity Increased!");
                     }
 
@@ -366,7 +367,8 @@
           clicksPerSecond = clickCounter / timeInterval;
           console.log(clicksPerSecond);
           
-          if (clicksPerSecond <= 0.56) {
+          // both minimal clicks and low horizontal velocity is basically a dead ball
+          if (clicksPerSecond <= 0.56 && Math.abs(ball.vx) <= 0.5) {
             clickCounter = 0;
             resetGame(false, this, hoop, "DEAD BALL: KEEP THE BALL MOVING! RESET SCORE!");
           }
@@ -416,18 +418,25 @@
         if (success) {
           hoops += 1;
 
-          // random change of anti-gravity
+          // random chance of anti-gravity unless it's the increased gravity
           dice = randomRange(1, 7);
-          if (dice <= 2) {
+          if (dice <= 1 && hoops != 5) {
             document.getElementById("captcha-text").textContent = "SPECIAL EVENT: Anti-gravity on! " + (goal-hoops) + " goals left!";
             gravity *= -1;
           }
         }
         
         else {
+          fails += 1;
+
+          if (fails == 5 || fails == 10) {
+            gravity /= 1.5; // decreases the gravity if too many fails
+            document.getElementById("captcha-text").textContent = "You've been here awhile. Let's decrease the gravity a little!";
+          }
+
           // reset conditions
           if (hoops >= 5) {
-            gravity /= 1.8;
+            gravity /= 1.5;
           }
 
           hoops = 0; 
