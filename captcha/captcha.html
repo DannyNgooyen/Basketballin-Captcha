@@ -378,6 +378,11 @@
         document.getElementById("captcha-container").addEventListener("click", () => {
           clickCounter++;
         });
+
+        // adds counter for mobile
+        document.getElementById("captcha-container").addEventListener("touchstart", () => {
+          clickCounter++;
+        });
       }
 
       // ball and hoop don't seem to be getting fully deleted here
