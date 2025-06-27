@@ -18,11 +18,13 @@
       background: white;
       width: 390px;
       height: 300px;
+      overflow: hidden;
     }
 
     /* Your style here... */
     #captcha-container img {
       pointer-events: none;
+      user-select: none;
     }
   </style>
 </head>
@@ -30,7 +32,7 @@
 <body>
   <div id="captcha-container">
     <!-- Add your CAPTCHA here: -->
-    <span id="captcha-text">Get the ball through the hoop. Keep the ball moving, drag mouse to throw. </span>
+    <span id="captcha-text">Get the ball through the hoop 10 times. Keep the ball moving, drag to throw. </span>
 
     <!-- We've added a sample button. Feel free to remove it: -->
     <button id="start">
@@ -62,7 +64,21 @@
 
       const terminalVelocity = 25; // rounded the actual terminal velocity of falling basketball (https://www.youtube.com/watch?v=EDKQIeWvXjw)
       const goal = 10; // number of hoops needed for success
-      let hoops = 0; // number of hoops made so far
+      let hoops = 4; // number of hoops made so far
+      let gravity = 0.981; // gravitational constant
+
+      // some fun details, different backgrounds and their names
+      const backgroundThemes = [
+        { name: "Urban Landscape", wall: "#f0f0f0", floor: "#3B3F4E"},
+        { name: "Daytime Outdoor Court", wall: "#87CEEB", floor: "#F7F7F7"},
+        { name: "Nighttime Outdoor Court", wall: "#2F343A", floor: "#454F55"},
+        { name: "Indoor Wooden Court", wall: "#964B00", floor: "#FFC080"},
+        { name: "Urban Rooftop Court (stone)", wall: "#969696", floor: "#786C3B"},
+        { name: "Beach Court (sand and sky)", wall: "#ADD8E6", floor: "#F5F5DC"},
+        { name: "Industrial Indoor Court (metal and concrete)", wall: "#666666", floor: "#999999"},
+        { name: "Retro Outdoor Court", wall: "#6495ED", floor: "#808080"},
+        { name: "Forest Court (green surroundings)", wall: "#228B22", floor: "#786C3B"}
+      ];
 
 // creating a class for all of the different characters
       class ballObject {
@@ -79,14 +95,11 @@
           this.vx = 0; 
           this.vy = 0;
 
+          // wind applies at higher difficulties
+          this.wind = 0;
+
           this.width = 25; // width of the image
           this.height = 32; // height of the image
-          
-          // create a clickable wrapper element for ball
-          this.wrapper = document.createElement('wrapper');
-          this.wrapper.style.width = '42px'; 
-          this.wrapper.style.height = '42px'; 
-          this.wrapper.append(this.image)
           
           // place the image onto the captcha
           document.getElementById('captcha-container').appendChild(this.image);
@@ -105,15 +118,13 @@
           document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
           document.addEventListener('mouseup', (e) => this.handleRelease(e));
 
-          // adding touch constrols
-          // lets the ball be dragged from anywhere
+          // adding touch controls
           document.addEventListener('touchstart', (e) => this.handleTouchStart(e), {passive:false});
           document.addEventListener('touchmove', (e) => this.handleTouchMove(e), {passive:false});
           document.addEventListener('touchend', (e) => this.handleRelease(e));
         }
 
         // controls to move the ball
-        
         handleMouseDown(e) {
           this.aiming = true;
           this.initialX = e.clientX;
@@ -156,23 +167,30 @@
           }
         }
 
-        resetBall() {
-          this.x = randomRange(0, containerWidth-2*25); 
-          this.y = 32;
+        changeWind() {
+          this.wind = randomRange(-10, 11);
+          let windDirection = " ->";
+
+          if (this.wind < 0) {
+            windDirection = " <-";
+          }
+          
+          document.getElementById("captcha-text").textContent = "Wind Speed: " + Math.abs(this.wind) + windDirection;
         }
 
         // continually update movement from gravity
         update(hoop) {
           this.x += this.vx;
           this.y += this.vy;
-          this.vy += 0.981; // gravity (based on the real constant of 9.81 m/s^2)
+          this.vy += gravity; // gravity (based on the real constant of 9.81 m/s^2)
+          this.x += this.wind;
 
           // applies air resistance to slow ball over time
-          this.vx *= 0.95 
-          this.vy *= 0.95 
+          this.vx *= 0.95; 
+          this.vy *= 0.95; 
 
           this.vy = Math.min(this.vy, terminalVelocity); // limit based on fastest velocity of ball
-           
+            
           // left wall
           if (this.x < 0) {
             this.x = 0;
@@ -181,15 +199,15 @@
           }
 
           // right wall
-          else if (this.x > containerWidth-2*this.width) {
-            this.x = containerWidth-2*this.width;
+          else if (this.x > containerWidth - 2*this.width) {
+            this.x = containerWidth - 2*this.width;
             this.vy *= -0.97;
             this.vx *= -0.97;
           }
 
           // floor (no dribbling on the floor)
-          if (this.y > containerHeight-2*this.height) {
-            this.y = containerHeight-2*this.height;
+          if (this.y > containerHeight - 2*this.height) {
+            this.y = containerHeight - 2*this.height;
           }
 
           // ceiling
@@ -200,52 +218,51 @@
           }
 
           // hoop collision
-          if (this.x + this.width > hoop.x &&
-              this.x < hoop.x + hoop.width &&
-              this.y + this.height > hoop.y &&
-              this.y < hoop.y + hoop.height) {
+          const padding = 4; // padding for the rims
+          
+          if (this.x + this.width > hoop.x - padding &&
+              this.x < hoop.x + hoop.width + padding &&
+              this.y + this.height > hoop.y - padding &&
+              this.y < hoop.y + hoop.height + padding) {
 
-            let basketArea = 49; // middle section that the ball can go through
+            let basketArea = 32 - hoops; // middle section that the ball can go through
 
             if (this.x + this.width > hoop.x + ((hoop.width - basketArea)/2) &&
                 this.x < hoop.x + hoop.width - ((hoop.width - basketArea)/2)) {
                   // ball went through over the hoop
-                  if (this.vy > 0) {
-                    hoops += 1;
-                    this.resetBall();
-                    console.log("goal detected");
-                    
-                    if (hoops == goal) {
-                      captchaSuccess();
+                  if (this.vy > -2) {
+                    gravity = Math.abs(gravity);
+
+                    if (hoops == 4) {
+                      gravity *= 1.8;
+                      resetGame(true, this, hoop, "Nice, you made a goal. " + (goal-(hoops+1)) + " goals left! Gravity Increased!");
                     }
+
+                    else {
+                      resetGame(true, this, hoop, "Nice, you made a goal. " + (goal-(hoops+1)) + " goals left!");
+                    }
+                    
                 }
-                
+                  
                 // ball went through under the hoop
                 else {
-                  console.log("violation");
+                  resetGame(false, this, hoop, "VIOLATION: CAN'T SCORE UNDER HOOP! RESET SCORE!");
                 }
               }  
-            
+              
             else {
               this.vy *= -0.97;
               this.vx *= -0.97;
-              console.log("Collision detected")
             }
-          }
-
-          // effectively a dead ball
-          if (Math.abs(this.vx) < 0.5 && this.vy > 17) {
-            console.log("dead ball. end.")
           }
 
           this.image.style.top = this.y + "px";
           this.image.style.left = this.x + "px";
         }
-
       }
 
       class hoopObject {
-        constructor(src, x, y) {
+        constructor(src, x, y, vx) {
           this.image = new Image();
           this.image.src = src;
           
@@ -254,34 +271,168 @@
           this.x = x;
           this.y = y;
           
-          this.width = 75; // width of the image
-          this.height = 17; // height of the image
+          this.vx = vx; // velocity of the hoop, only horizontal movement
+
+          this.width = 50; // width of the image
+          this.height = 11; // height of the HOOP part of the image
 
           // place the image onto the captcha
           document.getElementById('captcha-container').appendChild(this.image);
           this.image.style.top = this.y + "px";
           this.image.style.left = this.x + "px";
         }
+      
+        // allows the hoop to move, only horizontal movement
+        move() {
+          this.x += this.vx;
+          
+          // left wall hit
+          if (this.x < 0) {
+            this.x = 0;
+            this.vx *= -1;
+          }
+
+          //right wall hit
+          else if (this.x > containerWidth - this.width) {
+            this.x = containerWidth - this.width;
+            this.vx *= -1;
+          }
+
+          this.image.style.left = this.x + "px";
+        }
       }
 
       function startGame() {
+        // activate a moving hoop with scaling speed once the halfway mark is reached
+        if (hoops >= 3) {
+          hoopSpeed = hoops;
+        }
+
+        else {
+          hoopSpeed = 0;
+        }
+        
+        // adding background image
+        canvas = document.createElement('canvas');
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
+        document.getElementById('captcha-container').appendChild(canvas);
+
+        let background = canvas.getContext('2d');
+        
+        backgroundTheme = randomChoice(backgroundThemes);
+
+        // sky/walls
+        background.fillStyle = backgroundTheme.wall; // Light gray
+        background.fillRect(0, 0, containerWidth, containerHeight); 
+
+        // floor
+        background.fillStyle = backgroundTheme.floor; // deep slate
+        background.fillRect(0, containerHeight - 2*32 + 5, containerWidth, containerHeight);
+
+
+        // initializing the captcha objects
         const ball = new ballObject("assets/ball.png", 
                                     randomRange(0, containerWidth-2*25), 
-                                    32);
+                                    randomRange(80, 200));
 
         const hoop = new hoopObject("assets/hoop.png",
-                                    randomRange(0, containerWidth-2*75), 60);
+                                    randomRange(0, containerWidth-2*75), 
+                                    60, hoopSpeed);
 
         // hide the start button so it doesn't get spammed
         document.getElementById("start").style.visibility = "hidden";
         document.getElementById("captcha-text").textContent = "";
 
-      
         // keep the ball's movement updated from gravity
-        setInterval(() => {
+        animation = setInterval(() => {
           ball.update(hoop);
+          hoop.move();
         }, 36); 
-    
+
+        // apply the wind for last 3 points
+        if (hoops >= 7) {
+          ball.changeWind();
+          windAnimation = setInterval(() => {
+            ball.changeWind();
+          }, 3500); 
+        }
+
+        // determining a dead ball
+        let clickCounter = 0;
+        const timeInterval = 1.8; // measured in seconds
+
+        idleDetection = setInterval(() => {
+          clicksPerSecond = clickCounter / timeInterval;
+          console.log(clicksPerSecond);
+          
+          if (clicksPerSecond <= 0.56) {
+            clickCounter = 0;
+            resetGame(false, this, hoop, "DEAD BALL: KEEP THE BALL MOVING! RESET SCORE!");
+          }
+          else{
+            clickCounter = 0;
+          }
+        }, timeInterval*1000);
+        
+        document.getElementById("captcha-container").addEventListener("click", () => {
+          clickCounter++;
+        });
+      }
+
+      // ball and hoop don't seem to be getting fully deleted here
+      function resetGame(success, ball, hoop, text) {        
+        // clean off the animation
+        clearInterval(animation);
+        clearInterval(idleDetection);
+
+        if (hoops >= 7) {
+          clearInterval(windAnimation);
+        }
+        
+        // give a failure message and make the start button accessible again
+        document.getElementById("start").style.visibility = "visible";
+        document.getElementById("captcha-text").textContent = text;
+        
+        // remove the background
+        canvas.remove();
+
+        // remove all the game's images
+        var characters = document.getElementById('captcha-container').getElementsByTagName('img');
+        while (characters.length > 0) {
+          characters[0].remove();
+        }
+
+        // delete the references to the objects, which should be garbage collected later
+        delete ball;
+        delete hoop;
+
+        // update the hoops scored
+        if (success) {
+          hoops += 1;
+
+          // random change of anti-gravity
+          dice = randomRange(1, 7);
+          if (dice <= 2) {
+            document.getElementById("captcha-text").textContent = "SPECIAL EVENT: Anti-gravity on! " + (goal-hoops) + " goals left!";
+            gravity *= -1;
+          }
+        }
+        
+        else {
+          // reset conditions
+          if (hoops >= 5) {
+            gravity /= 1.8;
+          }
+
+          hoops = 0; 
+        }
+        
+        // hit the goal, you pass!
+        if (hoops >= goal) {
+          captchaSuccess();
+        }
+
       }
 
       // when hitting start
