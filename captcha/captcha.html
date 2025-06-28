@@ -201,14 +201,14 @@
           // left wall
           if (this.x < 0) {
             this.x = 0;
-            this.vy *= -0.97;
+            this.vy *= 0.97;
             this.vx *= -0.97;
           }
 
           // right wall
           else if (this.x > containerWidth - 2*this.width) {
             this.x = containerWidth - 2*this.width;
-            this.vy *= -0.97;
+            this.vy *= 0.97;
             this.vx *= -0.97;
           }
 
@@ -220,7 +220,7 @@
           // ceiling
           else if (this.y < 15) {
             this.y = 15;
-            this.vx *= -0.97;
+            this.vx *= 0.97;
             this.vy *= -0.97;
           }
 
