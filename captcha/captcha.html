@@ -258,8 +258,17 @@
               }  
               
             else {
-              this.vy *= -0.97;
-              this.vx *= -0.97;
+              // left side of the rim
+              if (this.x + this.width < hoop.x + (hoop.width/2)) {
+                this.vy = -0.97 * Math.abs(this.vy);
+                this.vx = -0.97 * Math.abs(this.vx);
+              }
+              
+              //right side of the rim
+              else {
+                this.vy = 0.97 * Math.abs(this.vy);
+                this.vx = 0.97 * Math.abs(this.vx);
+              }
             }
           }
 
