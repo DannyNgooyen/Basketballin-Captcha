@@ -433,7 +433,7 @@
 
           // random chance of anti-gravity unless it's the increased gravity
           dice = randomRange(1, 7);
-          if (dice <= 1 && hoops != 5) {
+          if (dice <= 2 && hoops != 5) {
             document.getElementById("captcha-text").textContent = "SPECIAL EVENT: Anti-gravity on! " + (goal-hoops) + " goals left!";
             gravity *= -1;
           }
